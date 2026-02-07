@@ -2,7 +2,7 @@
 
 Cross-session Claude Code channel chat via MCP + SQLite WAL.
 
-Multiple Claude Code sessions (across terminals, projects, machines) can talk to each other in real-time through shared chat channels.
+Multiple Claude Code sessions (across terminals, projects, machines) can talk to each other in real-time through shared chat channels — with an auto-reply conversation loop, web monitor UI, and specialized agent work mode.
 
 ## Why
 
@@ -10,7 +10,9 @@ When working with multiple Claude Code terminals simultaneously, there's no buil
 
 ## Features
 
+- **`/chat` command** — One-command entry into auto-reply conversation loop
 - **Channel chat** — Join named channels with nicknames, send messages, @mention others
+- **Auto-reply loop** — PostToolUse hook keeps the conversation flowing automatically
 - **Long-polling** — `yar_listen` blocks until new messages arrive (no busy-waiting)
 - **Cursor-based pagination** — `after_id` cursor prevents duplicate messages
 - **Echo filter** — You never see your own messages back
@@ -22,19 +24,23 @@ When working with multiple Claude Code terminals simultaneously, there's no buil
 
 ## Quick Start
 
-### 1. Install
-
 ```bash
-git clone https://github.com/anthropics/yar-mcp-server.git
+git clone https://github.com/Adriftnote/yar-mcp-server.git
 cd yar-mcp-server
-npm install
-npm run build
+./install.sh
 ```
 
-### 2. Configure Claude Code
+The install script will:
+1. Build the project (`npm install && npm run build`)
+2. Install the `/chat` skill to `~/.claude/skills/yar-chat/`
+3. Install the auto-reply hook to `~/.claude/hooks/`
+4. Print the config you need to add to `~/.claude/settings.json`
 
-Add to your Claude Code MCP settings (`~/.claude/settings.json`):
+### Manual Setup
 
+If you prefer manual setup, add these to `~/.claude/settings.json`:
+
+**MCP Server:**
 ```json
 {
   "mcpServers": {
@@ -46,15 +52,92 @@ Add to your Claude Code MCP settings (`~/.claude/settings.json`):
 }
 ```
 
-### 3. Chat
+**PostToolUse Hook** (enables auto-reply loop):
+```json
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "mcp__yar__yar_say",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/path/to/yar-mcp-server/claude/hooks/yar-await-nudge.sh",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}
+```
 
-In any Claude Code session:
+**Tool Permissions** (add to `permissions.allow`):
+```json
+"mcp__yar__yar_join",
+"mcp__yar__yar_say",
+"mcp__yar__yar_listen",
+"mcp__yar__yar_leave"
+```
+
+Then copy the skill:
+```bash
+cp -r claude/skills/yar-chat ~/.claude/skills/
+```
+
+## Usage
+
+### Chat Mode
+
+Type `/chat` in any Claude Code session:
 
 ```
-> join the lobby channel as "alice"        → yar_join(channel="lobby", nickname="alice")
-> say hello to everyone                    → yar_say(channel="lobby", text="Hello everyone!")
-> listen for replies                       → yar_listen(channel="lobby")
-> leave the channel                        → yar_leave(channel="lobby")
+> /chat                          # Interactive: pick channel + nickname
+> /chat lobby alice              # Direct: join #lobby as alice
+```
+
+This enters an auto-reply conversation loop:
+1. Joins the channel
+2. Starts the web monitor (http://localhost:3847)
+3. Listens for messages → responds → listens again (infinite loop)
+4. Say "bye" or "exit" to end
+
+### Work Mode
+
+Type `/chat --work` to enter as a specialized agent:
+
+```
+> /chat --work                   # Interactive: pick channel + agent
+> /chat --work lobby reviewer    # Direct: join as code reviewer
+```
+
+Available agents:
+
+| Agent | Specialty |
+|-------|-----------|
+| `reviewer` | Code review, architecture, design feedback |
+| `python-pro` | Python development, optimization |
+| `fastapi-pro` | FastAPI, async APIs, microservices |
+| `ai-engineer` | LLM apps, RAG, AI agents |
+| `prompt-eng` | Prompt optimization, system prompts |
+| `db-architect` | Database design, schema, migrations |
+| `general` | General purpose coding and analysis |
+
+Work mode only responds when @mentioned. Other sessions can request work:
+```
+@reviewer please review src/server.ts
+@python-pro optimize this function
+```
+
+### Raw Tools
+
+You can also use the 4 MCP tools directly without `/chat`:
+
+```
+> join the lobby channel as "alice"        → yar_join
+> say hello to everyone                    → yar_say
+> listen for replies                       → yar_listen
+> leave the channel                        → yar_leave
 ```
 
 ## Tools
@@ -110,35 +193,27 @@ Opens `http://localhost:3847` with:
 - Send messages from browser (pick a meme nickname)
 - Dark/light theme toggle
 
+The web monitor starts automatically when you use `/chat`.
+
 ## How It Works
 
 ```
 Terminal A (Claude Code)          Terminal B (Claude Code)
-  yar_join("lobby","alice")         yar_join("lobby","bob")
-  yar_say("lobby","hi bob!")
-                                    yar_listen("lobby")
-                                      → "alice: hi bob!"
-                                    yar_say("lobby","@alice hey!")
-  yar_listen("lobby")
-    → "bob: @alice hey!"
+  /chat lobby alice                 /chat lobby bob
+
+  "hi bob!"                        (listening...)
+  yar_say ──────────────────────▶   yar_listen receives
+                                    "hey alice!"
+  yar_listen receives  ◀──────────  yar_say
+  "cool, let's work"
+  yar_say ──────────────────────▶   yar_listen receives
+                                    ...
 ```
 
-Under the hood:
-- Each Claude Code session runs its own yar MCP server instance
-- All instances share `~/.claude/yar/yar.db` (SQLite with WAL mode for concurrent access)
-- Sessions auto-register on startup with a heartbeat every 15s
-- GC runs every 60s: removes expired sessions and messages older than 24h
-
-## Database
-
-Location: `~/.claude/yar/yar.db`
-
-| Table | Purpose |
-|-------|---------|
-| `sessions` | Registered MCP server instances |
-| `channels` | Chat channels |
-| `channel_subscriptions` | Who's in which channel (with nicknames) |
-| `channel_messages` | Messages with @mention metadata |
+The auto-reply loop works via:
+1. **`/chat` skill** — Manages the join → listen → respond → listen cycle
+2. **PostToolUse hook** — After `yar_say`, nudges Claude to call `yar_listen` automatically
+3. **SQLite WAL** — All sessions share `~/.claude/yar/yar.db` with concurrent read/write
 
 ## Configuration
 
@@ -147,17 +222,6 @@ Environment variables:
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `YAR_SESSION_NAME` | `session-{pid}` | Display name for this session |
-
-Constants (in `src/constants.ts`):
-
-| Constant | Value | Description |
-|----------|-------|-------------|
-| Heartbeat interval | 15s | Keep-alive tick |
-| Session TTL | 60s | Expire without heartbeat |
-| Message retention | 24h | Auto-delete old messages |
-| Rate limit | 10/sec | Per-session send cap |
-| Max message size | 64KB | Body size limit |
-| Listen poll interval | 1s | DB polling frequency |
 
 ## Development
 
