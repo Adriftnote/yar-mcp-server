@@ -1,0 +1,52 @@
+{
+  "name": "yar-mcp-server",
+  "version": "2.0.0",
+  "description": "Cross-session Claude Code channel chat via MCP + SQLite WAL",
+  "type": "module",
+  "main": "dist/index.js",
+  "license": "MIT",
+  "author": "ryu",
+  "keywords": [
+    "mcp",
+    "mcp-server",
+    "claude",
+    "claude-code",
+    "chat",
+    "channel",
+    "sqlite",
+    "cross-session"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ryu/yar-mcp-server"
+  },
+  "files": [
+    "dist/",
+    "web/",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "start": "node dist/index.js",
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "monitor": "node dist/web/server.js",
+    "clean": "rm -rf dist"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.6.1",
+    "better-sqlite3": "^11.7.0",
+    "express": "^5.2.1",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.12",
+    "@types/express": "^5.0.6",
+    "@types/node": "^22.10.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  }
+}

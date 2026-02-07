@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Yar Chat Monitor</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+/* Dark mode (default) */
+:root {
+  --bg: #1a1a2e;
+  --sidebar-bg: #16213e;
+  --chat-bg: #0f3460;
+  --bubble-other: #1a1a40;
+  --bubble-self: #533483;
+  --text: #e4e4e4;
+  --text-muted: #8892b0;
+  --accent: #e94560;
+  --border: #233554;
+  --channel-active: rgba(233, 69, 96, 0.15);
+  --channel-hover: rgba(233, 69, 96, 0.08);
+  --bubble-text: #e4e4e4;
+  --mention-color: #e94560;
+}
+
+/* Light mode — aesthetic iMessage */
+html.light {
+  --bg: #ece8de;
+  --sidebar-bg: #e3dfd4;
+  --chat-bg: #ece8de;
+  --bubble-other: #6b9f6b;
+  --bubble-self: #8fb88f;
+  --text: #2c2c2e;
+  --text-muted: #7a7a7e;
+  --accent: #6b9f6b;
+  --border: #cdc8bc;
+  --channel-active: rgba(107, 159, 107, 0.18);
+  --channel-hover: rgba(107, 159, 107, 0.1);
+  --bubble-text: #fafaf5;
+  --mention-color: #e8d44d;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  height: 100vh;
+  overflow: hidden;
+}
+
+.app {
+  display: flex;
+  height: 100vh;
+}
+
+/* Sidebar */
+.sidebar {
+  width: 260px;
+  background: var(--sidebar-bg);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+}
+
+.sidebar-header {
+  padding: 16px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sidebar-header h1 {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.sidebar-header .badge {
+  font-size: 10px;
+  background: var(--accent);
+  color: white;
+  padding: 2px 6px;
+  border-radius: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.channel-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px;
+}
+
+.channel-item {
+  padding: 10px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  margin-bottom: 2px;
+  transition: background 0.15s;
+}
+
+.channel-item:hover {
+  background: var(--channel-hover);
+}
+
+.channel-item.active {
+  background: var(--channel-active);
+}
+
+.channel-name {
+  font-size: 14px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.channel-name::before {
+  content: '#';
+  color: var(--text-muted);
+  font-weight: 700;
+}
+
+.channel-members {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 3px;
+  padding-left: 18px;
+}
+
+.no-channels {
+  padding: 20px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+/* Chat area */
+.chat-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.chat-header {
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border);
+  background: var(--sidebar-bg);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.chat-header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.chat-header h2 {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.chat-header h2::before {
+  content: '#';
+  color: var(--text-muted);
+  margin-right: 4px;
+}
+
+.member-count {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #4caf50;
+  display: inline-block;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+.messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.msg-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 8px;
+}
+
+.msg-sender {
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 2px;
+  padding-left: 4px;
+}
+
+.msg-bubble {
+  max-width: 70%;
+  padding: 8px 14px;
+  border-radius: 18px;
+  font-size: 14px;
+  line-height: 1.4;
+  word-wrap: break-word;
+  white-space: pre-wrap;
+  position: relative;
+}
+
+.msg-bubble.other {
+  background: var(--bubble-other);
+  color: var(--bubble-text);
+  border-top-left-radius: 6px;
+  align-self: flex-start;
+}
+
+.msg-bubble.other + .msg-bubble.other {
+  border-top-left-radius: 18px;
+}
+
+.msg-time {
+  font-size: 10px;
+  color: var(--text-muted);
+  margin-top: 2px;
+  padding-left: 4px;
+}
+
+.mention {
+  color: var(--mention-color);
+  font-weight: 600;
+}
+
+.empty-state {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 12px;
+  color: var(--text-muted);
+}
+
+.empty-state .icon {
+  font-size: 48px;
+  opacity: 0.3;
+}
+
+.empty-state p {
+  font-size: 14px;
+}
+
+/* Light mode overrides */
+html.light .msg-sender { opacity: 0.85; }
+html.light .sidebar-header h1 { color: #5a8a5a; }
+html.light .sidebar-header .badge { background: #6b9f6b; }
+html.light .status-dot { background: #6b9f6b; }
+
+/* Theme toggle button */
+.theme-toggle {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--sidebar-bg);
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s, color 0.2s;
+  flex-shrink: 0;
+}
+.theme-toggle:hover {
+  color: var(--text);
+  background: var(--channel-hover);
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+/* Chat input bar */
+.chat-input-bar {
+  padding: 12px 20px;
+  border-top: 1px solid var(--border);
+  background: var(--sidebar-bg);
+  display: none;
+  gap: 8px;
+  align-items: center;
+}
+.chat-input-bar.visible { display: flex; }
+.chat-input-bar input {
+  flex: 1;
+  padding: 10px 14px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 14px;
+  outline: none;
+}
+.chat-input-bar input:focus { border-color: var(--accent); }
+.chat-input-bar input::placeholder { color: var(--text-muted); }
+.chat-input-bar button {
+  padding: 8px 16px;
+  border-radius: 20px;
+  border: none;
+  background: var(--accent);
+  color: white;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.chat-input-bar button:hover { opacity: 0.85; }
+.nick-badge {
+  font-size: 12px;
+  color: var(--accent);
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.nick-badge:hover { text-decoration: underline; }
+
+/* Nickname modal */
+.nick-modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.5);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 100;
+}
+.nick-modal-overlay.hidden { display: none; }
+.nick-modal {
+  background: var(--sidebar-bg);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 24px;
+  width: 340px;
+  text-align: center;
+}
+.nick-modal h3 {
+  font-size: 18px;
+  margin-bottom: 16px;
+  color: var(--text);
+}
+.nick-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.nick-option {
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.15s;
+  text-align: left;
+}
+.nick-option:hover {
+  border-color: var(--accent);
+  background: var(--channel-active);
+}
+.nick-modal input {
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 14px;
+  outline: none;
+  text-align: center;
+}
+.nick-modal input:focus { border-color: var(--accent); }
+.nick-modal input::placeholder { color: var(--text-muted); }
+.nick-modal-enter {
+  margin-top: 12px;
+  padding: 10px 24px;
+  border-radius: 12px;
+  border: none;
+  background: var(--accent);
+  color: white;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  display: none;
+}
+.nick-modal-enter:hover { opacity: 0.85; }
+
+/* Code blocks in messages */
+.msg-bubble pre {
+  background: rgba(0,0,0,0.3);
+  border-radius: 8px;
+  padding: 8px 10px;
+  margin: 4px 0;
+  overflow-x: auto;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.msg-bubble code {
+  font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+  font-size: 12px;
+}
+.msg-bubble code:not(pre code) {
+  background: rgba(0,0,0,0.2);
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+html.light .msg-bubble pre { background: rgba(0,0,0,0.08); }
+html.light .msg-bubble code:not(pre code) { background: rgba(0,0,0,0.08); }
+
+/* Self bubble (web user's messages) */
+.msg-bubble.self {
+  background: var(--bubble-self);
+  color: var(--bubble-text);
+  border-top-right-radius: 6px;
+  align-self: flex-end;
+}
+.msg-group.self-group { align-items: flex-end; }
+.msg-group.self-group .msg-sender { padding-right: 4px; text-align: right; }
+.msg-group.self-group .msg-time { padding-right: 4px; text-align: right; }
+
+/* New message flash */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.msg-group.new {
+  animation: fadeIn 0.25s ease;
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <h1>Yar~</h1>
+      <span class="badge">Monitor</span>
+      <span style="flex:1"></span>
+      <button class="theme-toggle" id="themeToggle" title="Toggle theme">🌙</button>
+    </div>
+    <div class="channel-list" id="channelList">
+      <div class="no-channels">Loading channels...</div>
+    </div>
+  </div>
+  <div class="chat-area">
+    <div class="chat-header" id="chatHeader" style="display:none;">
+      <div class="chat-header-left">
+        <h2 id="channelTitle"></h2>
+        <span class="member-count" id="memberCount"></span>
+      </div>
+      <span class="status-dot" title="Polling active"></span>
+    </div>
+    <div class="messages" id="messages">
+      <div class="empty-state">
+        <div class="icon">&#x1F4E1;</div>
+        <p>Select a channel to start monitoring</p>
+      </div>
+    </div>
+    <div class="chat-input-bar" id="chatInputBar">
+      <span class="nick-badge" id="nickBadge" title="Click to change nickname"></span>
+      <input type="text" id="chatInput" placeholder="Type a message..." autocomplete="off">
+      <button id="sendBtn">Send</button>
+    </div>
+  </div>
+</div>
+
+<!-- Nickname modal -->
+<div class="nick-modal-overlay hidden" id="nickModal">
+  <div class="nick-modal">
+    <h3>Pick your nickname</h3>
+    <div class="nick-options" id="nickOptions"></div>
+    <input type="text" id="nickCustomInput" placeholder="or type your own...">
+    <button class="nick-modal-enter" id="nickCustomBtn">Enter</button>
+  </div>
+</div>
+
+<script>
+(function() {
+  // Nickname -> color map
+  const colorPalette = [
+    '#e94560', '#00d2d3', '#ff6348', '#7bed9f', '#ffa502',
+    '#70a1ff', '#ff6b81', '#2ed573', '#eccc68', '#a29bfe',
+    '#fd79a8', '#00cec9', '#fab1a0', '#81ecec', '#dfe6e9',
+  ];
+  const nickColors = {};
+  let colorIdx = 0;
+
+  function getColor(nick) {
+    if (!nickColors[nick]) {
+      nickColors[nick] = colorPalette[colorIdx % colorPalette.length];
+      colorIdx++;
+    }
+    return nickColors[nick];
+  }
+
+  // Funny meme nicknames
+  const memeNicknames = [
+    '🤡 doge-senpai',
+    '😎 pepe-lord',
+    '🥸 nyan-master',
+    '💀 stonks-guy',
+    '🤪 harambe-fan',
+    '😏 big-brain',
+    '🫠 skill-issue',
+    '🧐 sus-amogus',
+    '😤 rage-quit',
+    '🤓 ackchyually',
+  ];
+
+  function getRandomMemeNick() {
+    return memeNicknames[Math.floor(Math.random() * memeNicknames.length)];
+  }
+
+  // State
+  let currentChannel = null;
+  let lastId = null;
+  let pollTimer = null;
+  let channelPollTimer = null;
+  let autoScroll = true;
+  let myNickname = localStorage.getItem('yar-nickname') || null;
+
+  const channelListEl = document.getElementById('channelList');
+  const messagesEl = document.getElementById('messages');
+  const chatHeaderEl = document.getElementById('chatHeader');
+  const channelTitleEl = document.getElementById('channelTitle');
+  const memberCountEl = document.getElementById('memberCount');
+  const chatInputBar = document.getElementById('chatInputBar');
+  const chatInput = document.getElementById('chatInput');
+  const sendBtn = document.getElementById('sendBtn');
+  const nickBadge = document.getElementById('nickBadge');
+  const nickModal = document.getElementById('nickModal');
+  const nickOptions = document.getElementById('nickOptions');
+  const nickCustomInput = document.getElementById('nickCustomInput');
+  const nickCustomBtn = document.getElementById('nickCustomBtn');
+
+  // Track scroll position for auto-scroll
+  messagesEl.addEventListener('scroll', () => {
+    const { scrollTop, scrollHeight, clientHeight } = messagesEl;
+    autoScroll = scrollHeight - scrollTop - clientHeight < 60;
+  });
+
+  function scrollToBottom() {
+    if (autoScroll) {
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+    }
+  }
+
+  function formatTime(ts) {
+    const d = new Date(ts);
+    return d.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  }
+
+  function highlightMentions(text) {
+    return text.replace(/@([\w가-힣\-]+)/g, '<span class="mention">@$1</span>');
+  }
+
+  // Code block rendering: ```lang\ncode\n``` -> <pre><code>
+  function renderCodeBlocks(html) {
+    return html.replace(/```(\w*)\n?([\s\S]*?)```/g, (_, lang, code) => {
+      return `<pre><code class="lang-${lang || 'text'}">${code.trim()}</code></pre>`;
+    }).replace(/`([^`]+)`/g, '<code>$1</code>');
+  }
+
+  // Fetch channels
+  async function fetchChannels() {
+    try {
+      const res = await fetch('/api/channels');
+      const channels = await res.json();
+      renderChannels(channels);
+    } catch (e) {
+      console.error('Failed to fetch channels:', e);
+    }
+  }
+
+  function renderChannels(channels) {
+    if (channels.length === 0) {
+      channelListEl.innerHTML = '<div class="no-channels">No active channels</div>';
+      return;
+    }
+
+    channelListEl.innerHTML = channels.map(ch => `
+      <div class="channel-item ${ch.channel_name === currentChannel ? 'active' : ''}"
+           data-channel="${ch.channel_name}">
+        <div class="channel-name">${ch.channel_name}</div>
+        <div class="channel-members">${ch.members.join(', ') || 'empty'}</div>
+      </div>
+    `).join('');
+
+    // Click handlers
+    channelListEl.querySelectorAll('.channel-item').forEach(el => {
+      el.addEventListener('click', () => {
+        selectChannel(el.dataset.channel);
+      });
+    });
+  }
+
+  function selectChannel(name) {
+    if (currentChannel === name) return;
+    currentChannel = name;
+    lastId = null;
+    autoScroll = true;
+
+    // Update UI
+    chatHeaderEl.style.display = 'flex';
+    chatInputBar.classList.add('visible');
+    channelTitleEl.textContent = name;
+    messagesEl.innerHTML = '';
+
+    // Mark active in sidebar
+    channelListEl.querySelectorAll('.channel-item').forEach(el => {
+      el.classList.toggle('active', el.dataset.channel === name);
+    });
+
+    // Load messages immediately
+    fetchMessages();
+
+    // Start polling
+    if (pollTimer) clearInterval(pollTimer);
+    pollTimer = setInterval(fetchMessages, 1000);
+
+    // Update members
+    fetchMembers();
+  }
+
+  async function fetchMembers() {
+    if (!currentChannel) return;
+    try {
+      const res = await fetch(`/api/members?channel=${encodeURIComponent(currentChannel)}`);
+      const data = await res.json();
+      memberCountEl.textContent = `${data.members.length} member${data.members.length !== 1 ? 's' : ''}`;
+    } catch (e) {
+      // ignore
+    }
+  }
+
+  async function fetchMessages() {
+    if (!currentChannel) return;
+    try {
+      let url = `/api/messages?channel=${encodeURIComponent(currentChannel)}`;
+      if (lastId) url += `&after_id=${encodeURIComponent(lastId)}`;
+      const res = await fetch(url);
+      const data = await res.json();
+
+      if (data.messages.length > 0) {
+        renderMessages(data.messages, !!lastId);
+        lastId = data.last_id;
+      }
+    } catch (e) {
+      console.error('Poll error:', e);
+    }
+  }
+
+  function renderMessages(msgs, isNew) {
+    // Group consecutive messages from same sender
+    let groups = [];
+    let current = null;
+
+    for (const msg of msgs) {
+      if (!current || current.nickname !== msg.nickname) {
+        current = { nickname: msg.nickname, messages: [msg] };
+        groups.push(current);
+      } else {
+        current.messages.push(msg);
+      }
+    }
+
+    for (const group of groups) {
+      const groupEl = document.createElement('div');
+      groupEl.className = 'msg-group' + (isNew ? ' new' : '');
+
+      const color = getColor(group.nickname);
+
+      // Sender name
+      const senderEl = document.createElement('div');
+      senderEl.className = 'msg-sender';
+      senderEl.style.color = color;
+      senderEl.textContent = group.nickname;
+      groupEl.appendChild(senderEl);
+
+      // Bubbles
+      const isSelf = myNickname && group.nickname === myNickname;
+      if (isSelf) groupEl.classList.add('self-group');
+
+      for (const msg of group.messages) {
+        const bubbleEl = document.createElement('div');
+        bubbleEl.className = isSelf ? 'msg-bubble self' : 'msg-bubble other';
+        bubbleEl.innerHTML = renderCodeBlocks(highlightMentions(escapeHtml(msg.body)));
+        groupEl.appendChild(bubbleEl);
+      }
+
+      // Timestamp of last message in group
+      const timeEl = document.createElement('div');
+      timeEl.className = 'msg-time';
+      timeEl.textContent = formatTime(group.messages[group.messages.length - 1].created_at);
+      groupEl.appendChild(timeEl);
+
+      messagesEl.appendChild(groupEl);
+    }
+
+    scrollToBottom();
+  }
+
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  // --- Nickname modal ---
+  function showNickModal() {
+    const meme1 = getRandomMemeNick();
+    let meme2 = getRandomMemeNick();
+    while (meme2 === meme1) meme2 = getRandomMemeNick();
+
+    nickOptions.innerHTML = [meme1, meme2].map(n =>
+      `<div class="nick-option" data-nick="${n.slice(2).trim()}" data-display="${n}">${n}</div>`
+    ).join('');
+
+    nickOptions.querySelectorAll('.nick-option').forEach(el => {
+      el.addEventListener('click', () => {
+        setNickname(el.dataset.nick, el.dataset.display);
+      });
+    });
+
+    nickCustomInput.value = '';
+    nickCustomBtn.style.display = 'none';
+    nickModal.classList.remove('hidden');
+  }
+
+  nickCustomInput.addEventListener('input', () => {
+    nickCustomBtn.style.display = nickCustomInput.value.trim() ? 'inline-block' : 'none';
+  });
+
+  nickCustomInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && nickCustomInput.value.trim()) {
+      setNickname(nickCustomInput.value.trim(), nickCustomInput.value.trim());
+    }
+  });
+
+  nickCustomBtn.addEventListener('click', () => {
+    if (nickCustomInput.value.trim()) {
+      setNickname(nickCustomInput.value.trim(), nickCustomInput.value.trim());
+    }
+  });
+
+  function setNickname(nick, display) {
+    myNickname = nick;
+    localStorage.setItem('yar-nickname', nick);
+    localStorage.setItem('yar-nick-display', display || nick);
+    updateNickBadge();
+    nickModal.classList.add('hidden');
+  }
+
+  function updateNickBadge() {
+    const display = localStorage.getItem('yar-nick-display') || myNickname || '?';
+    nickBadge.textContent = display;
+  }
+
+  nickBadge.addEventListener('click', showNickModal);
+
+  // Show nick modal on first use
+  if (!myNickname) {
+    showNickModal();
+  } else {
+    updateNickBadge();
+  }
+
+  // --- Send message ---
+  async function sendMessage() {
+    const text = chatInput.value.trim();
+    if (!text || !currentChannel || !myNickname) return;
+
+    chatInput.value = '';
+    try {
+      await fetch('/api/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ channel: currentChannel, nickname: myNickname, text }),
+      });
+      // Message will appear via polling
+    } catch (e) {
+      console.error('Send error:', e);
+    }
+  }
+
+  sendBtn.addEventListener('click', sendMessage);
+  chatInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+  });
+
+  // Theme toggle
+  const themeToggleEl = document.getElementById('themeToggle');
+  const savedTheme = localStorage.getItem('yar-theme');
+  if (savedTheme === 'light') {
+    document.documentElement.classList.add('light');
+    themeToggleEl.textContent = '☀️';
+  }
+  themeToggleEl.addEventListener('click', () => {
+    const isLight = document.documentElement.classList.toggle('light');
+    themeToggleEl.textContent = isLight ? '☀️' : '🌙';
+    localStorage.setItem('yar-theme', isLight ? 'light' : 'dark');
+  });
+
+  // Initial load + periodic channel refresh
+  fetchChannels();
+  channelPollTimer = setInterval(() => {
+    fetchChannels();
+    if (currentChannel) fetchMembers();
+  }, 5000);
+})();
+</script>
+</body>
+</html>
