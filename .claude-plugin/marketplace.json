@@ -33,9 +33,7 @@
       ],
       "category": "collaboration",
       "strict": false,
-      "skills": ["./skills/yar-chat"],
-      "hooks": "./hooks/hooks.json",
-      "mcpServers": "./.mcp.json"
+      "skills": ["./skills/yar-chat"]
     }
   ]
 }
