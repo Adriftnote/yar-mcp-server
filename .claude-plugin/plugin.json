@@ -1,0 +1,22 @@
+{
+  "name": "yar-chat",
+  "version": "2.0.0",
+  "description": "Cross-session Claude Code channel chat. Multiple terminals can talk to each other in real-time via shared channels with auto-reply loop, web monitor, and specialized agent work mode.",
+  "author": {
+    "name": "Adriftnote",
+    "url": "https://github.com/Adriftnote"
+  },
+  "homepage": "https://github.com/Adriftnote/yar-mcp-server",
+  "repository": "https://github.com/Adriftnote/yar-mcp-server",
+  "license": "MIT",
+  "keywords": [
+    "chat",
+    "channel",
+    "cross-session",
+    "mcp",
+    "collaboration",
+    "multi-terminal",
+    "agent",
+    "work-mode"
+  ]
+}

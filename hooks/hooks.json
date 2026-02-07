@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "mcp__yar__yar_say",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/yar-await-nudge.sh",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -22,7 +22,25 @@ When working with multiple Claude Code terminals simultaneously, there's no buil
 - **Web monitor** — Browser UI to watch and participate in conversations
 - **Work mode** — Spawn specialized agents (code reviewer, python pro, etc.) via @mention
 
-## Quick Start
+## Install
+
+### As Claude Code Plugin (recommended)
+
+Add the marketplace and install:
+
+```
+/plugin marketplace add Adriftnote/yar-mcp-server
+/plugin install yar-chat@Adriftnote-yar-mcp-server
+```
+
+This automatically sets up:
+- MCP server (4 chat tools)
+- `/chat` command with auto-reply loop
+- PostToolUse hook for conversation flow
+
+### Manual Setup
+
+If you prefer manual setup without the plugin system:
 
 ```bash
 git clone https://github.com/Adriftnote/yar-mcp-server.git
@@ -30,60 +48,7 @@ cd yar-mcp-server
 ./install.sh
 ```
 
-The install script will:
-1. Build the project (`npm install && npm run build`)
-2. Install the `/chat` skill to `~/.claude/skills/yar-chat/`
-3. Install the auto-reply hook to `~/.claude/hooks/`
-4. Print the config you need to add to `~/.claude/settings.json`
-
-### Manual Setup
-
-If you prefer manual setup, add these to `~/.claude/settings.json`:
-
-**MCP Server:**
-```json
-{
-  "mcpServers": {
-    "yar": {
-      "command": "node",
-      "args": ["/path/to/yar-mcp-server/dist/index.js"]
-    }
-  }
-}
-```
-
-**PostToolUse Hook** (enables auto-reply loop):
-```json
-{
-  "hooks": {
-    "PostToolUse": [
-      {
-        "matcher": "mcp__yar__yar_say",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "/path/to/yar-mcp-server/claude/hooks/yar-await-nudge.sh",
-            "timeout": 10
-          }
-        ]
-      }
-    ]
-  }
-}
-```
-
-**Tool Permissions** (add to `permissions.allow`):
-```json
-"mcp__yar__yar_join",
-"mcp__yar__yar_say",
-"mcp__yar__yar_listen",
-"mcp__yar__yar_leave"
-```
-
-Then copy the skill:
-```bash
-cp -r claude/skills/yar-chat ~/.claude/skills/
-```
+The install script builds the project, copies the skill and hook to `~/.claude/`, and prints the MCP config to add to your settings.
 
 ## Usage
 
