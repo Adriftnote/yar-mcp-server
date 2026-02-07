@@ -2,7 +2,7 @@
   "hooks": {
     "PostToolUse": [
       {
-        "matcher": "mcp__yar__yar_say",
+        "matcher": "yar__say",
         "hooks": [
           {
             "type": "command",

@@ -1,6 +1,6 @@
 #!/bin/bash
 # yar-await-nudge.sh
-# PostToolUse hook: after yar_say succeeds, nudge Claude to call yar_listen
+# PostToolUse hook: after say succeeds, nudge Claude to call listen
 INPUT=$(cat)
 
 # Extract tool_response text (handles MCP tool response format)
@@ -23,8 +23,8 @@ if [ -z "$RESPONSE_TEXT" ] || [ "$RESPONSE_TEXT" = "null" ]; then
   exit 0
 fi
 
-# Verify yar_say success: check for message_id field
-if ! echo "$RESPONSE_TEXT" | jq -e '.message_id' >/dev/null 2>&1; then
+# Verify say success: check for message_id field
+if ! echo "$RESPONSE_TEXT" | jq -e '.message_id // empty' >/dev/null 2>&1; then
   exit 0
 fi
 
@@ -36,6 +36,6 @@ jq -n --arg ch "$CHANNEL" '{
   "systemMessage": "[yar-loop] Message sent. Awaiting reply recommended.",
   "hookSpecificOutput": {
     "hookEventName": "PostToolUse",
-    "additionalContext": ("Message sent to channel " + $ch + ". To maintain the conversation loop, call yar_listen(channel=\"" + $ch + "\", timeout_seconds=60) to wait for reply. Use the last_id from the response as after_id cursor in the next listen call. Skip if conversation is finished.")
+    "additionalContext": ("Message sent to channel " + $ch + ". To maintain the conversation loop, call listen(channel=\"" + $ch + "\", timeout_seconds=60) to wait for reply. Use the last_id from the response as after_id cursor in the next listen call. Skip if conversation is finished.")
   }
 }'

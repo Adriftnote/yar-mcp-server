@@ -42,9 +42,9 @@ function requireSession(): string {
 /** Register all 4 chat tools on the MCP server */
 export function registerChatTools(server: McpServer): void {
 
-  // ─── yar_join ────────────────────────────────────────────
+  // ─── join ───────────────────────────────────────────────
   server.tool(
-    "yar_join",
+    "join",
     "Join a chat channel with a nickname. Creates the channel if it doesn't exist. Returns member list.",
     JoinSchema.shape,
     async (params: JoinInput): Promise<ToolResult> => {
@@ -69,9 +69,9 @@ export function registerChatTools(server: McpServer): void {
     }
   );
 
-  // ─── yar_say ─────────────────────────────────────────────
+  // ─── say ────────────────────────────────────────────────
   server.tool(
-    "yar_say",
+    "say",
     "Send a message to a channel. Use @nickname to mention someone. Must join the channel first.",
     SaySchema.shape,
     async (params: SayInput): Promise<ToolResult> => {
@@ -93,9 +93,9 @@ export function registerChatTools(server: McpServer): void {
     }
   );
 
-  // ─── yar_listen ──────────────────────────────────────────
+  // ─── listen ─────────────────────────────────────────────
   server.tool(
-    "yar_listen",
+    "listen",
     "Wait for new messages in a channel (long-poll). Excludes your own messages. Use after_id as cursor to avoid duplicates.",
     ListenSchema.shape,
     async (params: ListenInput): Promise<ToolResult> => {
@@ -107,7 +107,7 @@ export function registerChatTools(server: McpServer): void {
         if (!ownNickname) {
           throw new YarError(
             ErrorCode.NOT_IN_CHANNEL,
-            `Not in channel '${params.channel}'. Use yar_join first.`
+            `Not in channel '${params.channel}'. Use join first.`
           );
         }
 
@@ -149,9 +149,9 @@ export function registerChatTools(server: McpServer): void {
     }
   );
 
-  // ─── yar_leave ───────────────────────────────────────────
+  // ─── leave ──────────────────────────────────────────────
   server.tool(
-    "yar_leave",
+    "leave",
     "Leave a channel, or list all channels and their members (omit channel parameter).",
     LeaveSchema.shape,
     async (params: LeaveInput): Promise<ToolResult> => {

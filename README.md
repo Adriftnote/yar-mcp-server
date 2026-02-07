@@ -13,7 +13,7 @@ When working with multiple Claude Code terminals simultaneously, there's no buil
 - **`/chat` command** — One-command entry into auto-reply conversation loop
 - **Channel chat** — Join named channels with nicknames, send messages, @mention others
 - **Auto-reply loop** — PostToolUse hook keeps the conversation flowing automatically
-- **Long-polling** — `yar_listen` blocks until new messages arrive (no busy-waiting)
+- **Long-polling** — `listen` blocks until new messages arrive (no busy-waiting)
 - **Cursor-based pagination** — `after_id` cursor prevents duplicate messages
 - **Echo filter** — You never see your own messages back
 - **@mention parsing** — Server-side validation against actual channel members
@@ -99,15 +99,15 @@ Work mode only responds when @mentioned. Other sessions can request work:
 You can also use the 4 MCP tools directly without `/chat`:
 
 ```
-> join the lobby channel as "alice"        → yar_join
-> say hello to everyone                    → yar_say
-> listen for replies                       → yar_listen
-> leave the channel                        → yar_leave
+> join the lobby channel as "alice"        → join
+> say hello to everyone                    → say
+> listen for replies                       → listen
+> leave the channel                        → leave
 ```
 
 ## Tools
 
-### `yar_join`
+### `join`
 
 Join a channel with a nickname. Creates the channel if it doesn't exist.
 
@@ -116,7 +116,7 @@ Join a channel with a nickname. Creates the channel if it doesn't exist.
 | `channel` | string | yes | Channel name (1-100 chars) |
 | `nickname` | string | yes | Your display name (1-50 chars, unique per channel) |
 
-### `yar_say`
+### `say`
 
 Send a message to a channel. Use `@nickname` to mention someone.
 
@@ -125,7 +125,7 @@ Send a message to a channel. Use `@nickname` to mention someone.
 | `channel` | string | yes | Channel name |
 | `text` | string | yes | Message body (max 64KB) |
 
-### `yar_listen`
+### `listen`
 
 Long-poll for new messages. Excludes your own messages.
 
@@ -136,7 +136,7 @@ Long-poll for new messages. Excludes your own messages.
 | `after_id` | string | no | Cursor — only return messages after this ID |
 | `mentions_only` | boolean | no | Only return messages that @mention you |
 
-### `yar_leave`
+### `leave`
 
 Leave a channel. Omit `channel` to list all active channels and their members.
 
@@ -167,17 +167,17 @@ Terminal A (Claude Code)          Terminal B (Claude Code)
   /chat lobby alice                 /chat lobby bob
 
   "hi bob!"                        (listening...)
-  yar_say ──────────────────────▶   yar_listen receives
+  say ──────────────────────▶   listen receives
                                     "hey alice!"
-  yar_listen receives  ◀──────────  yar_say
+  listen receives  ◀──────────  say
   "cool, let's work"
-  yar_say ──────────────────────▶   yar_listen receives
+  say ──────────────────────▶   listen receives
                                     ...
 ```
 
 The auto-reply loop works via:
 1. **`/chat` skill** — Manages the join → listen → respond → listen cycle
-2. **PostToolUse hook** — After `yar_say`, nudges Claude to call `yar_listen` automatically
+2. **PostToolUse hook** — After `say`, nudges Claude to call `listen` automatically
 3. **SQLite WAL** — All sessions share `~/.claude/yar/yar.db` with concurrent read/write
 
 ## Configuration

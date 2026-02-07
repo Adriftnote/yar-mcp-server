@@ -19,8 +19,8 @@
 │                ┌──────────▼───────────────────────────────────┐  │
 │                │         Tools Layer (chat-tools.ts)           │  │
 │                │  ┌───────────┐  ┌────────────┐               │  │
-│                │  │ yar_join  │  │ yar_say    │               │  │
-│                │  │ yar_listen│  │ yar_leave  │               │  │
+│                │  │ join      │  │ say        │               │  │
+│                │  │ listen    │  │ leave      │               │  │
 │                │  └─────┬─────┘  └─────┬──────┘               │  │
 │                └────────┼──────────────┼──────────────────────┘  │
 │                         │ calls        │ calls                   │
@@ -63,10 +63,10 @@
 
 | Tool | Description |
 |------|-------------|
-| `yar_join` | Join a channel with nickname. Creates channel if needed. Returns member list. |
-| `yar_say` | Send message to channel. Parses @mentions server-side. |
-| `yar_listen` | Long-poll for new messages. Cursor-based (`after_id`), echo filter (excludes own). |
-| `yar_leave` | Leave a channel, or list all channels when `channel` param omitted. |
+| `join` | Join a channel with nickname. Creates channel if needed. Returns member list. |
+| `say` | Send message to channel. Parses @mentions server-side. |
+| `listen` | Long-poll for new messages. Cursor-based (`after_id`), echo filter (excludes own). |
+| `leave` | Leave a channel, or list all channels when `channel` param omitted. |
 
 ## Constants
 
@@ -87,7 +87,7 @@
 
 ### Say (Post Message)
 ```
-Client → yar_say tool
+Client → say tool
   → requireSession() (verify own session)
   → checkRateLimit() (in-memory sliding window)
   → check body size (64KB limit)
@@ -95,12 +95,12 @@ Client → yar_say tool
   → parseMentions() → validate @nicknames against channel members
   → INSERT INTO channel_messages
   → return message with hidden metadata (<!--meta:...-->)
-  → PostToolUse hook triggers yar_listen nudge
+  → PostToolUse hook triggers listen nudge
 ```
 
 ### Listen (Long-Poll)
 ```
-Client → yar_listen tool
+Client → listen tool
   → requireSession()
   → resolveChannelId() → getNickname() (verify membership)
   → poll loop (1s interval, up to timeout_seconds):
@@ -185,7 +185,7 @@ all ──→ constants.ts, types.ts
 The yar conversation loop works via hook + skill combination:
 
 1. **PostToolUse Hook** (`.claude/hooks/yar-await-nudge.sh`):
-   After `yar_say` succeeds, nudges Claude to call `yar_listen`.
+   After `say` succeeds, nudges Claude to call `listen`.
 
 2. **`/chat` Skill** (`~/.claude/skills/yar-chat/SKILL.md`):
    Channel/nickname selection UI → join → listen → receive → say → (hook nudges listen again).

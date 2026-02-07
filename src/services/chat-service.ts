@@ -84,7 +84,7 @@ export function postMessage(params: {
   if (!nickname) {
     throw new YarError(
       ErrorCode.NOT_IN_CHANNEL,
-      `Not in channel '${params.channel_name}'. Use yar_join first.`
+      `Not in channel '${params.channel_name}'. Use join first.`
     );
   }
 

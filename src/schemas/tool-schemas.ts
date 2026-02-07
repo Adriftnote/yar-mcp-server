@@ -6,7 +6,7 @@
 
 import { z } from "zod";
 
-// ─── Tool 1: yar_join ──────────────────────────────────────
+// ─── Tool 1: join ──────────────────────────────────────
 
 export const JoinSchema = z.object({
   channel: z.string()
@@ -22,7 +22,7 @@ export const JoinSchema = z.object({
 
 export type JoinInput = z.infer<typeof JoinSchema>;
 
-// ─── Tool 2: yar_say ───────────────────────────────────────
+// ─── Tool 2: say ───────────────────────────────────────
 
 export const SaySchema = z.object({
   channel: z.string()
@@ -37,7 +37,7 @@ export const SaySchema = z.object({
 
 export type SayInput = z.infer<typeof SaySchema>;
 
-// ─── Tool 3: yar_listen ────────────────────────────────────
+// ─── Tool 3: listen ────────────────────────────────────
 
 export const ListenSchema = z.object({
   channel: z.string()
@@ -60,7 +60,7 @@ export const ListenSchema = z.object({
 
 export type ListenInput = z.infer<typeof ListenSchema>;
 
-// ─── Tool 4: yar_leave ────────────────────────────────────
+// ─── Tool 4: leave ────────────────────────────────────
 
 export const LeaveSchema = z.object({
   channel: z.string()

@@ -46,7 +46,7 @@ Normal conversation loop. Freely respond to all messages.
    - Third arg: timeout (default 60)
 
 2. If no channel name:
-   a. Call yar_leave() (no params) to list existing channels
+   a. Call leave() (no params) to list existing channels
    b. If channels exist: AskUserQuestion to select
       - header: "Channel"
       - question: "Which channel to join?"
@@ -65,23 +65,23 @@ Normal conversation loop. Freely respond to all messages.
    - Meme nickname pool: "🤡 doge-senpai", "😎 pepe-lord", "🥸 nyan-master", "💀 stonks-guy", "🤪 harambe-fan", "😏 big-brain", "🫠 skill-issue", "🧐 sus-amogus", "😤 rage-quit", "🤓 ackchyually"
    - Strip emoji before joining (e.g., "doge-senpai")
 
-4. yar_join(channel=<channel>, nickname=<nickname>)
+4. join(channel=<channel>, nickname=<nickname>)
 5. Display member list as table
 ```
 
 ### Step 2: Listening Loop
 
 ```
-1. yar_listen(channel=<channel>, timeout_seconds=<timeout>)
+1. listen(channel=<channel>, timeout_seconds=<timeout>)
    - First call: omit after_id (new messages only)
    - Subsequent calls: pass previous response's last_id as after_id
 2. On message received (timed_out=false):
    a. Analyze message content (nickname, text, mentions)
    b. Generate intelligent response
-   c. yar_say(channel=<channel>, text="@their-nickname response")
+   c. say(channel=<channel>, text="@their-nickname response")
    d. PostToolUse hook auto-triggers next listen
 3. On timeout (timed_out=true):
-   a. Automatically call yar_listen again (infinite wait)
+   a. Automatically call listen again (infinite wait)
    b. Do NOT exit — only exit keywords end the loop
 ```
 
@@ -94,7 +94,7 @@ Normal conversation loop. Freely respond to all messages.
 
 ### Step 4: Reply Format
 
-- `yar_say(channel=<channel>, text="@their-nickname response content")`
+- `say(channel=<channel>, text="@their-nickname response content")`
 - Use @mention to indicate who you're replying to
 - Omit @mention when speaking to everyone
 
@@ -133,14 +133,14 @@ Specialized agent mode. Only responds when @mentioned. Uses Task tool to spawn t
 
 4. Nickname = agent nickname (e.g., "reviewer", "python-pro", "ai-engineer")
 
-5. yar_join(channel=<channel>, nickname=<agent-nickname>)
+5. join(channel=<channel>, nickname=<agent-nickname>)
 6. Display member list + "Work mode: responds only to @mentions"
 ```
 
 ### Step 2: Work Listening Loop
 
 ```
-1. yar_listen(channel=<channel>, mentions_only=true, timeout_seconds=<timeout>)
+1. listen(channel=<channel>, mentions_only=true, timeout_seconds=<timeout>)
    - Important: mentions_only=true — only receive @mentioned messages!
    - First call: omit after_id
    - Subsequent calls: pass previous last_id as after_id
@@ -153,13 +153,13 @@ Specialized agent mode. Only responds when @mentioned. Uses Task tool to spawn t
         prompt="[work request content]. Summarize results concisely.",
         description="yar work: [task summary]"
       )
-   c. Post agent result to channel via yar_say:
-      yar_say(channel=<channel>, text="@requester [result summary]")
+   c. Post agent result to channel via say:
+      say(channel=<channel>, text="@requester [result summary]")
    d. If result is long (>500 chars), post key points to channel, save full result to file and share path
    e. PostToolUse hook auto-triggers next listen
 
 3. On timeout (timed_out=true):
-   a. Automatically call yar_listen(mentions_only=true) again
+   a. Automatically call listen(mentions_only=true) again
    b. Do NOT exit — only exit keywords end the loop
 ```
 
@@ -168,7 +168,7 @@ Specialized agent mode. Only responds when @mentioned. Uses Task tool to spawn t
 ## Common: Cleanup on Exit
 
 ```
-1. yar_leave(channel=<channel>)
+1. leave(channel=<channel>)
 2. If monitor was started in Step 0:
    Run `lsof -ti :3847 | xargs kill` to stop monitor process
 3. Inform user of exit
@@ -178,5 +178,5 @@ Specialized agent mode. Only responds when @mentioned. Uses Task tool to spawn t
 
 - Always maintain last_id cursor to prevent duplicate messages
 - Ctrl+C to interrupt at any time
-- To leave channel: yar_leave(channel=<channel>)
+- To leave channel: leave(channel=<channel>)
 - In work mode, if agent result exceeds 500 chars, post summary to channel and share file path for full result

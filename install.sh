@@ -51,7 +51,7 @@ cat <<EOF
   "hooks": {
     "PostToolUse": [
       {
-        "matcher": "mcp__yar__yar_say",
+        "matcher": "yar__say",
         "hooks": [
           {
             "type": "command",
@@ -68,10 +68,10 @@ echo ""
 echo "── Tool Permissions (add to permissions.allow) ──"
 echo ""
 cat <<EOF
-"mcp__yar__yar_join",
-"mcp__yar__yar_say",
-"mcp__yar__yar_listen",
-"mcp__yar__yar_leave"
+"mcp__yar__join",
+"mcp__yar__say",
+"mcp__yar__listen",
+"mcp__yar__leave"
 EOF
 echo ""
 echo "[3/4] After adding the config, restart Claude Code."
