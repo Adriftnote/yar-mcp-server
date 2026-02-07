@@ -31,9 +31,7 @@
         "agent",
         "work-mode"
       ],
-      "category": "collaboration",
-      "strict": false,
-      "skills": ["./skills/yar-chat"]
+      "category": "collaboration"
     }
   ]
 }
