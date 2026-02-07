@@ -17,13 +17,13 @@ echo "  ✓ Built"
 # 2. Install /chat skill
 SKILL_DIR="$CLAUDE_DIR/skills/yar-chat"
 mkdir -p "$SKILL_DIR"
-cp "$SCRIPT_DIR/claude/skills/yar-chat/SKILL.md" "$SKILL_DIR/SKILL.md"
+cp "$SCRIPT_DIR/skills/yar-chat/SKILL.md" "$SKILL_DIR/SKILL.md"
 echo "  ✓ /chat skill installed → $SKILL_DIR"
 
 # 3. Install PostToolUse hook
 HOOK_DIR="$CLAUDE_DIR/hooks"
 mkdir -p "$HOOK_DIR"
-cp "$SCRIPT_DIR/claude/hooks/yar-await-nudge.sh" "$HOOK_DIR/yar-await-nudge.sh"
+cp "$SCRIPT_DIR/hooks/yar-await-nudge.sh" "$HOOK_DIR/yar-await-nudge.sh"
 chmod +x "$HOOK_DIR/yar-await-nudge.sh"
 echo "  ✓ PostToolUse hook installed → $HOOK_DIR"
 

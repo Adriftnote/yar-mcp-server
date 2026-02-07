@@ -1,1 +1,0 @@
-{"version":3,"file":"session-state.js","sourceRoot":"","sources":["../../src/services/session-state.ts"],"names":[],"mappings":"AAAA;;;;GAIG;AAEH,IAAI,YAAY,GAAkB,IAAI,CAAC;AAEvC,MAAM,UAAU,eAAe,CAAC,EAAiB;IAC/C,YAAY,GAAG,EAAE,CAAC;AACpB,CAAC;AAED,MAAM,UAAU,eAAe;IAC7B,OAAO,YAAY,CAAC;AACtB,CAAC"}

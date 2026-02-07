@@ -1,5 +1,6 @@
 {
   "name": "yar-chat",
+  "version": "2.0.0",
   "description": "Cross-session Claude Code channel chat with auto-reply loop, web monitor, and specialized agent work mode",
   "author": {
     "name": "Adriftnote",

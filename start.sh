@@ -1,10 +1,15 @@
 #!/bin/bash
 # start.sh — Bootstrap and run yar MCP server
-# Auto-installs dependencies on first run
+# Auto-installs dependencies and builds on first run
 DIR="$(cd "$(dirname "$0")" && pwd)"
 
 if [ ! -d "$DIR/node_modules" ]; then
   npm install --prefix "$DIR" --omit=dev >/dev/null 2>&1
+fi
+
+if [ ! -f "$DIR/dist/index.js" ]; then
+  npm install --prefix "$DIR" >/dev/null 2>&1
+  npx --prefix "$DIR" tsc >/dev/null 2>&1
 fi
 
 exec node "$DIR/dist/index.js"
